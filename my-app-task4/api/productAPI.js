@@ -8,13 +8,22 @@ export const fetchProducts = async (pageNo) => {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const data = await response.json();
     
-    if (Array.isArray(data)) {
-      return data;
+    const text = await response.text();
+    // Remove any BOM characters and parse JSON
+    const cleanText = text.replace(/^\uFEFF/, '');
+    const data = JSON.parse(cleanText);
+    
+    if (Array.isArray(data.products)) {
+      // Transform the data to handle any Unicode encoded strings
+      return data.products.map(product => ({
+        ...product,
+        name: decodeURIComponent(JSON.parse(`"${product.name}"`)),
+        cate: decodeURIComponent(JSON.parse(`"${product.cate}"`))
+      }));
     }
 
-    // Fallback to mock data if API response is not as expected
+    console.log('Falling back to mock data');
     return getMockData(pageNo);
   } catch (error) {
     console.error('Error in fetchProducts:', error);
