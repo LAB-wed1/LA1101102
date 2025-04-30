@@ -18,7 +18,11 @@ const App = () => {
     try {
       setLoading(true);
       const data = await fetchProducts();
-      setProducts(data);
+      if (data && Array.isArray(data.products)) {
+        setProducts(data.products);
+      } else {
+        setError('ไม่พบข้อมูลสินค้า');
+      }
     } catch (error) {
       console.error('เกิดข้อผิดพลาดในการโหลดข้อมูล:', error);
       setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');

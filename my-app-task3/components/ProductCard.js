@@ -22,10 +22,10 @@ const ProductCard = ({ id, name, price, stock, cate, pic }) => {
 };
 
 ProductCard.propTypes = {
-  id: PropTypes.string.isRequired,
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   name: PropTypes.string.isRequired,
-  price: PropTypes.string.isRequired,
-  stock: PropTypes.string.isRequired,
+  price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  stock: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   cate: PropTypes.string.isRequired,
   pic: PropTypes.string.isRequired,
 };
