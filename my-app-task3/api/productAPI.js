@@ -12,13 +12,8 @@ export const fetchProducts = async () => {
     const data = await response.json();
     console.log('Fetched data:', data);
     
-    // API returns data in format { products: [...] }
-    if (data && data.products && Array.isArray(data.products)) {
-      return data.products;
-    }
-    
-    
-    return [];
+    // Using optional chaining for cleaner code
+    return Array.isArray(data?.products) ? data.products : [];
   } catch (error) {
     console.error('Error fetching products:', error);
     throw error;
