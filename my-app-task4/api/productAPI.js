@@ -27,21 +27,20 @@ export const fetchProducts = async (pageNo) => {
 export const fetchAllProducts = async () => {
   try {
     let allProducts = [];
-    
-    // Fetch first page
-    const page1Products = await fetchProducts(1);
-    allProducts = [...allProducts, ...page1Products];
-    console.log('Page 1 products:', page1Products.length);
-    
-    // Fetch second page
-    const page2Products = await fetchProducts(2);
-    allProducts = [...allProducts, ...page2Products];
-    console.log('Page 2 products:', page2Products.length);
-    
-    // Fetch third page
-    const page3Products = await fetchProducts(3);
-    allProducts = [...allProducts, ...page3Products];
-    console.log('Page 3 products:', page3Products.length);
+    let pageNo = 1;
+    let hasMoreData = true;
+
+    while (hasMoreData) {
+      const products = await fetchProducts(pageNo);
+      console.log(`Page ${pageNo} products:`, products.length);
+
+      if (products.length === 0) {
+        hasMoreData = false;
+      } else {
+        allProducts = [...allProducts, ...products];
+        pageNo++;
+      }
+    }
 
     console.log('Total products loaded:', allProducts.length);
     const inStockProducts = allProducts.filter(item => parseInt(item.stock) > 0);
