@@ -16,6 +16,13 @@ const ProductCard = ({ name, price, stock, pic }) => {
   );
 };
 
+ProductCard.propTypes = {
+  name: PropTypes.string.isRequired,
+  price: PropTypes.string.isRequired,
+  stock: PropTypes.string.isRequired,
+  pic: PropTypes.string.isRequired,
+};
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
