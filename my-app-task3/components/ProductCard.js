@@ -6,12 +6,16 @@ import PropTypes from 'prop-types';
 const ProductCard = ({ id, name, price, stock, cate, pic }) => {
   return (
     <View style={styles.card}>
-      <Image source={{ uri: pic }} style={styles.image} />
+      <Image 
+        source={{ uri: pic }} 
+        style={styles.image}
+        resizeMode="cover"
+      />
       <View style={styles.content}>
-        <Text style={styles.title}>{name}</Text>
+        <Text style={styles.title} numberOfLines={2}>{name}</Text>
         <Text style={styles.category}>{cate}</Text>
-        <Text style={styles.price}>ราคา: ฿{price}</Text>
-        <Text style={styles.stock}>สินค้าคงเหลือ: {stock}</Text>
+        <Text style={styles.price}>฿{price}</Text>
+        <Text style={styles.stock}>สินค้าคงเหลือ: {stock} ชิ้น</Text>
       </View>
     </View>
   );
@@ -30,40 +34,42 @@ ProductCard.propTypes = {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
   },
   image: {
     width: '100%',
-    height: 200,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
+    height: 180,
+    backgroundColor: '#f5f5f5',
   },
   content: {
-    padding: 15,
+    padding: 12,
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 6,
+    color: '#333',
   },
   category: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   price: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#e91e63',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   stock: {
     fontSize: 14,
