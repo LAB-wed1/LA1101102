@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import PropTypes from 'prop-types';
 
 const ProductCard = ({ name, price, stock, pic }) => {
   return (
