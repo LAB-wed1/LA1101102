@@ -1,10 +1,21 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import PropTypes from 'prop-types';
 
-const ProductCard = ({ name, price, stock, pic }) => {
+const ProductCard = ({ name, price, stock, pic, onPress }) => {
+  const handlePress = () => {
+    console.log('Product pressed:', name); // เพิ่ม log เพื่อตรวจสอบการกด
+    if (onPress) {
+      onPress(name); // ส่งชื่อสินค้าไปยังฟังก์ชัน onPress
+    }
+  };
+
   return (
-    <View style={styles.card}>
+    <TouchableOpacity 
+      style={styles.card}
+      onPress={handlePress}
+      activeOpacity={0.5} // ลดค่าลงเพื่อให้เห็นการกดชัดเจนขึ้น
+    >
       <Image
         source={{ uri: pic }}
         style={styles.image}
@@ -13,7 +24,7 @@ const ProductCard = ({ name, price, stock, pic }) => {
       <Text style={styles.title}>{name}</Text>
       <Text style={styles.description}>จำนวนคงเหลือ {stock}</Text>
       <Text style={styles.price}>฿{price}</Text>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -22,6 +33,7 @@ ProductCard.propTypes = {
   price: PropTypes.string.isRequired,
   stock: PropTypes.string.isRequired,
   pic: PropTypes.string.isRequired,
+  onPress: PropTypes.func,
 };
 
 const styles = StyleSheet.create({

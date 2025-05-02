@@ -1,118 +1,170 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, SafeAreaView, ScrollView, View, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar } from 'react-native';
+import { StyleSheet, SafeAreaView, ScrollView, View, Text, TouchableOpacity, ActivityIndicator, Platform, StatusBar, Alert } from 'react-native';
 import ProductCard from './components/ProductCard';
 import { fetchAllProducts } from './api/productAPI';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const App = () => {
+export default function App() {
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
-  const loadProducts = async () => {
-    try {
-      if (products.length === 0) {
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
         setLoading(true);
         const data = await fetchAllProducts();
         
         if (data && data.length > 0) {
           setProducts(data);
-          setFilteredProducts(data);
+          // Log total products and in-stock products for debugging
+          console.log('Total products:', data.length);
+          const inStockCount = data.filter(item => parseInt(item.stock) > 0).length;
+          console.log('Products in stock:', inStockCount);
         } else {
-          setError('ไม่พบข้อมูลสินค้า');
+          console.log('No products loaded');
         }
+      } catch (error) {
+        console.error('Error loading products:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('เกิดข้อผิดพลาดในการโหลดข้อมูล:', error);
-      setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
+    // ดึงข้อมูลสินค้าที่เคยบันทึกไว้
+    const getSelectedProduct = async () => {
+      try {
+        const savedProduct = await AsyncStorage.getItem('selectedProduct');
+        if (savedProduct !== null) {
+          setSelectedProduct(savedProduct);
+          console.log('พบสินค้าที่บันทึกไว้:', savedProduct);
+        }
+      } catch (error) {
+        console.error('Error getting saved product:', error);
+      }
+    };
+
     loadProducts();
+    getSelectedProduct();
   }, []);
 
-  const handleFilter = (filterType) => {
-    setFilter(filterType);
-    if (filterType === 'All') {
-      setFilteredProducts(products);
-    } else {
-      const inStockProducts = products.filter(product => parseInt(product.stock) > 0);
-      setFilteredProducts(inStockProducts);
+  // Filter products based on stock
+  const filteredProducts = filter === 'All'
+    ? products
+    : products.filter(product => parseInt(product.stock) > 0);
+
+  // Create a function to handle product selection
+  const handleProductPress = async (productName) => {
+    try {
+      // บันทึกชื่อสินค้าลงใน AsyncStorage
+      await AsyncStorage.setItem('selectedProduct', productName);
+      // อัพเดต state เพื่อแสดงผลทันที
+      setSelectedProduct(productName);
+      console.log('บันทึกสินค้า:', productName);
+      
+      // แสดง Alert เพื่อแจ้งผู้ใช้
+      Alert.alert(
+        'สำเร็จ',
+        `บันทึกสินค้า "${productName}" ลงในอุปกรณ์แล้ว`,
+        [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+      );
+    } catch (error) {
+      console.error('Error saving product to AsyncStorage:', error);
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกชื่อสินค้าได้');
     }
   };
 
-  const totalProducts = products.length;
-  const inStockProducts = products.filter(p => parseInt(p.stock) > 0).length;
+  // เพิ่มฟังก์ชันสำหรับลบข้อมูลสินค้าที่เลือกไว้
+  const handleClearSelectedProduct = async () => {
+    try {
+      await AsyncStorage.removeItem('selectedProduct');
+      setSelectedProduct(null);
+      console.log('ลบข้อมูลสินค้าที่เลือกไว้แล้ว');
+      
+      // แสดง Alert เพื่อแจ้งผู้ใช้
+      Alert.alert(
+        'สำเร็จ',
+        'ลบข้อมูลสินค้าที่เลือกไว้แล้ว',
+        [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+      );
+    } catch (error) {
+      console.error('Error clearing selected product:', error);
+      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถลบข้อมูลสินค้าได้');
+    }
+  };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>กำลังโหลดข้อมูล...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>กำลังโหลดข้อมูล...</Text>
+      </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.filterContainer}>
+      {/* ส่วนปุ่มการคัดกรอง (Filter) */}
+      <View style={styles.filterSection}>
         <TouchableOpacity
           style={[styles.filterButton, filter === 'All' && styles.activeFilter]}
-          onPress={() => handleFilter('All')}
+          onPress={() => setFilter('All')}
         >
-          <Text style={filter === 'All' ? styles.activeFilterText : styles.filterText}>
-            All ({totalProducts})
-          </Text>
+          <Text style={[styles.filterText, filter === 'All' && styles.activeFilterText]}>ALL</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.filterButton, filter === 'IN STOCK' && styles.activeFilter]}
-          onPress={() => handleFilter('IN STOCK')}
+          onPress={() => setFilter('IN STOCK')}
         >
-          <Text style={filter === 'IN STOCK' ? styles.activeFilterText : styles.filterText}>
-            IN STOCK ({inStockProducts})
-          </Text>
+          <Text style={[styles.filterText, filter === 'IN STOCK' && styles.activeFilterText]}>IN STOCK</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map(product => (
-            <ProductCard
-              key={product.id}
-              name={product.name}
-              price={product.price}
-              stock={product.stock}
-              pic={product.pic}
-            />
-          ))
+      {/* ส่วนแสดงรายการสินค้า */}
+      <View style={styles.productsSection}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map(product => (
+              <ProductCard
+                key={product.id}
+                name={product.name}
+                price={product.price}
+                stock={product.stock}
+                pic={product.pic}
+                onPress={() => handleProductPress(product.name)}
+              />
+            ))
+          ) : (
+            <Text style={styles.noProductsText}>ไม่พบสินค้า</Text>
+          )}
+        </ScrollView>
+      </View>
+
+      {/* ส่วนแสดงรายการที่ผู้ใช้เลือก */}
+      <View style={styles.selectedProductSection}>
+        {selectedProduct ? (
+          <Text style={styles.selectedProductText}>สินค้าที่เลือก: {selectedProduct}</Text>
         ) : (
-          <Text style={styles.noProductsText}>ไม่พบสินค้าตามเงื่อนไขที่เลือก</Text>
+          <Text style={styles.selectedProductText}>ยังไม่มีสินค้าที่เลือก</Text>
         )}
-      </ScrollView>
+        {selectedProduct && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClearSelectedProduct}
+          >
+            <Text style={styles.clearButtonText}>CLEAR</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fef6e9',
+    backgroundColor: '#f5f5f5',
     marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   loadingContainer: {
@@ -125,46 +177,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  errorContainer: {
+  // ส่วนของปุ่มคัดกรอง
+  filterSection: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#e91e63',
-    textAlign: 'center',
-  },
-  scrollContent: {
-    padding: 15,
-    paddingTop: 10,
-  },
-  filterContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#2196F3',
     padding: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   filterButton: {
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginHorizontal: 5,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-  },
-  activeFilter: {
-    backgroundColor: '#007bff',
+    borderRadius: 5,
   },
   filterText: {
-    fontWeight: '500',
-    color: '#333',
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  activeFilter: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   activeFilterText: {
     color: '#fff',
-    fontWeight: '500',
+    fontWeight: 'bold',
+  },
+  // ส่วนแสดงรายการสินค้า
+  productsSection: {
+    flex: 7,
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
+    padding: 10,
   },
   noProductsText: {
     textAlign: 'center',
@@ -172,6 +218,31 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 20,
   },
+  // ส่วนแสดงรายการที่ผู้ใช้เลือก
+  selectedProductSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+  },
+  selectedProductText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  clearButton: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    backgroundColor: '#FF3B30',
+    borderRadius: 5,
+  },
+  clearButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
-
-export default App;
