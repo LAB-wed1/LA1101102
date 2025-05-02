@@ -10,10 +10,10 @@ export const fetchProducts = async (pageNo) => {
     }
     
     const data = await response.json();
-    console.log(`Page ${pageNo} data:`, data);
     
     // API returns data in format { products: [...] }
     if (data && Array.isArray(data.products)) {
+      console.log(`Page ${pageNo} data: ${data.products.length} products`);
       return data.products;
     }
     
@@ -27,21 +27,22 @@ export const fetchProducts = async (pageNo) => {
 export const fetchAllProducts = async () => {
   try {
     let allProducts = [];
+    let currentPage = 1;
+    let hasMorePages = true;
     
-    // Fetch first page
-    const page1Products = await fetchProducts(1);
-    allProducts = [...allProducts, ...page1Products];
-    console.log('Page 1 products:', page1Products.length);
-    
-    // Fetch second page
-    const page2Products = await fetchProducts(2);
-    allProducts = [...allProducts, ...page2Products];
-    console.log('Page 2 products:', page2Products.length);
-    
-    // Fetch third page
-    const page3Products = await fetchProducts(3);
-    allProducts = [...allProducts, ...page3Products];
-    console.log('Page 3 products:', page3Products.length);
+    // Loop until we don't get any more products or reach a reasonable limit
+    while (hasMorePages && currentPage <= 10) { // Setting a max of 10 pages for safety
+      const pageProducts = await fetchProducts(currentPage);
+      
+      // If we get no products or empty array, stop fetching
+      if (!pageProducts || pageProducts.length === 0) {
+        hasMorePages = false;
+      } else {
+        allProducts = [...allProducts, ...pageProducts];
+        console.log(`Page ${currentPage} products: ${pageProducts.length}`);
+        currentPage++;
+      }
+    }
 
     console.log('Total products loaded:', allProducts.length);
     const inStockProducts = allProducts.filter(item => parseInt(item.stock) > 0);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 
 const ProfileScreen = ({ navigation }) => {
@@ -10,6 +10,8 @@ const ProfileScreen = ({ navigation }) => {
     address: '123 Main St, City, Country',
     phone: '+1 234 567 890',
   };
+  
+  const [imageError, setImageError] = useState(false);
 
   const handleLogout = () => {
     // In a real app, this would clear auth tokens
@@ -25,6 +27,7 @@ const ProfileScreen = ({ navigation }) => {
         <Image
           source={{ uri: user.profileImage }}
           style={styles.profileImage}
+          onError={() => setImageError(true)}
         />
         <Text style={styles.userName}>{user.name}</Text>
         <Text style={styles.userEmail}>{user.email}</Text>

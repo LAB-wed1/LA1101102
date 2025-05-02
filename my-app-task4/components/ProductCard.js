@@ -1,29 +1,55 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Dimensions, useWindowDimensions } from 'react-native';
 import PropTypes from 'prop-types';
 
 const ProductCard = ({ name, price, stock, pic, onPress }) => {
+  const [imageError, setImageError] = useState(false);
+  const windowWidth = useWindowDimensions().width;
+  
+  // Calculate card width based on screen size
+  const getCardWidth = () => {
+    // For small screens (less than 360px), make cards occupy more width
+    if (windowWidth < 360) {
+      return (windowWidth - 32) / 2; // Smaller gap on small screens
+    }
+    // Standard size for medium and larger screens
+    return (windowWidth - 48) / 2;
+  };
+  
+  const cardWidth = getCardWidth();
+  
   const handlePress = () => {
-    console.log('Product pressed:', name); // เพิ่ม log เพื่อตรวจสอบการกด
+    console.log('Product selected:', name);
     if (onPress) {
-      onPress(name); // ส่งชื่อสินค้าไปยังฟังก์ชัน onPress
+      onPress(name);
     }
   };
 
+  const fallbackImageUrl = 'https://via.placeholder.com/150';
+  const formattedPrice = parseInt(price).toLocaleString();
+
+  // Dynamically calculate image height based on card width to maintain aspect ratio
+  const imageHeight = cardWidth * 0.8;
+
   return (
     <TouchableOpacity 
-      style={styles.card}
+      style={[styles.card, { width: cardWidth }]}
       onPress={handlePress}
-      activeOpacity={0.5} // ลดค่าลงเพื่อให้เห็นการกดชัดเจนขึ้น
+      activeOpacity={0.7}
     >
-      <Image
-        source={{ uri: pic }}
-        style={styles.image}
-        resizeMode="contain"
-      />
-      <Text style={styles.title}>{name}</Text>
-      <Text style={styles.description}>จำนวนคงเหลือ {stock}</Text>
-      <Text style={styles.price}>฿{price}</Text>
+      <View style={[styles.imageContainer, { height: imageHeight }]}>
+        <Image
+          source={{ uri: imageError ? fallbackImageUrl : pic }}
+          style={styles.image}
+          resizeMode="contain"
+          onError={() => setImageError(true)}
+        />
+      </View>
+      <View style={styles.contentContainer}>
+        <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{name}</Text>
+        <Text style={styles.description}>จำนวนคงเหลือ {stock}</Text>
+        <Text style={styles.price}>฿{formattedPrice}</Text>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -39,35 +65,46 @@ ProductCard.propTypes = {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
+  imageContainer: {
+    width: '100%',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
   image: {
     width: '100%',
-    height: 150,
-    marginBottom: 10,
+    height: '100%',
+  },
+  contentContainer: {
+    padding: 12,
   },
   title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+    height: 40,
+    color: '#333',
+    lineHeight: 20,
   },
   description: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 8,
   },
   price: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#e91e63',
-    marginTop: 5,
   },
 });
 
