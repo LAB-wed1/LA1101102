@@ -71,42 +71,36 @@ export default function App() {
         console.log('บันทึกสินค้า:', productName);
         console.log('รายการสินค้าที่เลือกทั้งหมด:', updatedSelectedProducts);
         
-        // แสดง Alert เพื่อแจ้งผู้ใช้
-        Alert.alert(
-          'สำเร็จ',
-          `บันทึกสินค้า "${productName}" ลงในอุปกรณ์แล้ว`,
-          [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
-        );
+        // ใช้ JavaScript alert แทน React Native Alert
+        alert(`เพิ่มสินค้า "${productName}" เรียบร้อยแล้ว`);
       } else {
-        // แจ้งเตือนว่าสินค้านี้ถูกเลือกไว้แล้ว
-        Alert.alert(
-          'แจ้งเตือน',
-          `สินค้า "${productName}" ถูกเลือกไว้แล้ว`,
-          [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
-        );
+        // ใช้ JavaScript alert แทน React Native Alert
+        alert(`"${productName}" ได้ถูกเลือกไว้แล้ว`);
+        console.log('สินค้านี้ถูกเลือกไว้แล้ว:', productName);
       }
     } catch (error) {
-      console.error('Error saving product to AsyncStorage:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกชื่อสินค้าได้');
+      console.error('Error in handleProductPress:', error);
+      // ใช้ JavaScript alert แทน React Native Alert
+      alert('ไม่สามารถดำเนินการได้ กรุณาลองใหม่อีกครั้ง');
     }
   };
 
   // เพิ่มฟังก์ชันสำหรับลบข้อมูลสินค้าที่เลือกไว้ทั้งหมด
   const handleClearSelectedProducts = async () => {
     try {
+      // ลบข้อมูลจาก AsyncStorage
       await AsyncStorage.removeItem('selectedProducts');
-      setSelectedProducts([]);
-      console.log('ลบข้อมูลสินค้าที่เลือกไว้ทั้งหมดแล้ว');
       
-      // แสดง Alert เพื่อแจ้งผู้ใช้
-      Alert.alert(
-        'สำเร็จ',
-        'ลบข้อมูลสินค้าที่เลือกไว้ทั้งหมดแล้ว',
-        [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
-      );
+      // รีเซ็ต state
+      setSelectedProducts([]);
+      console.log('ลบข้อมูลสินค้าที่เลือกทั้งหมดแล้ว');
+      
+      // ใช้ JavaScript alert แทน React Native Alert
+      alert('ลบรายการสินค้าที่เลือกทั้งหมดเรียบร้อยแล้ว');
     } catch (error) {
-      console.error('Error clearing selected products:', error);
-      Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถลบข้อมูลสินค้าได้');
+      console.error('Error in handleClearSelectedProducts:', error);
+      // ใช้ JavaScript alert แทน React Native Alert
+      alert('ไม่สามารถดำเนินการได้ กรุณาลองใหม่อีกครั้ง');
     }
   };
 
