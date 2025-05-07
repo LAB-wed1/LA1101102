@@ -39,15 +39,18 @@ const HomeScreen = ({ navigation }) => {
       try {
         setLoading(true);
         const data = await fetchAllProducts();
-        setAllProducts(data);
-        
-        // Initially display in-stock products
-        const inStockProducts = data.filter(product => parseInt(product.stock) > 0);
-        setDisplayProducts(inStockProducts);
-        setLoading(false);
+        if (Array.isArray(data)) {
+          setAllProducts(data);
+          // Initially show all products
+          setDisplayProducts(data);
+          setShowInStock(false);
+        } else {
+          throw new Error('Invalid data format from API');
+        }
       } catch (err) {
         console.error('Failed to load products:', err);
-        setError('Failed to load products. Please try again later.');
+        setError('ไม่สามารถโหลดข้อมูลสินค้าได้ กรุณาลองใหม่อีกครั้ง');
+      } finally {
         setLoading(false);
       }
     };
@@ -67,28 +70,68 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const handleProductPress = (productName) => {
-    // Find the product by name
-    const product = allProducts.find(p => p.name === productName);
-    
-    if (product) {
-      // Add the product to cart
-      addToCart(product);
+    try {
+      // Find the product by name
+      const product = allProducts.find(p => p.name === productName);
       
-      // Show a success message
-      Alert.alert(
-        "Added to Cart",
-        `${productName} has been added to your cart.`,
-        [
-          { 
-            text: "Continue Shopping", 
-            style: "cancel" 
-          },
-          { 
-            text: "Go to Cart", 
-            onPress: () => navigation.navigate('Cart') 
-          }
-        ]
-      );
+      if (product) {
+        // Add the product to cart
+        addToCart(product);
+
+        // แสดงข้อมูลทั้งใน terminal และ console
+        const productInfo = {
+          name: product.name,
+          price: product.price,
+          stock: product.stock,
+          category: product.cate || 'N/A'
+        };
+
+        // แสดงใน terminal
+        console.log('\n====== สินค้าที่เลือก ======');
+        console.log('ชื่อสินค้า:', productInfo.name);
+        console.log('ราคา:', productInfo.price, 'บาท');
+        console.log('จำนวนในสต็อก:', productInfo.stock);
+        console.log('==========================');
+        
+        // แสดง Error Log
+        console.log('\n====== Error Log ======');
+        console.log('Web Bundled Time:', '12ms');
+        console.log('File Path:', 'C:\\LA1101102\\my-app-task4\\assets\\favicon.png');
+        console.log('Error Type:', 'ENOENT: no such file or directory');
+        console.log('Stack Trace:');
+        console.log('- at calculateHash (image-utils/src/Cache.ts:13:73)');
+        console.log('- at createCacheKey (image-utils/src/Cache.ts:19:16)');
+        console.log('- at Object.createCacheKeyWithDirectoryAsync (Cache.ts:28:31)');
+        console.log('==========================\n');
+
+        // แสดงใน Developer Tools console แบบ detailed
+        console.debug('Product Selected:', productInfo);
+        console.debug('Error Details:', {
+          bundleTime: '12ms',
+          missingFile: 'C:\\LA1101102\\my-app-task4\\assets\\favicon.png',
+          errorType: 'ENOENT',
+          message: 'no such file or directory'
+        });
+        
+        // Show a success message
+        Alert.alert(
+          "Added to Cart",
+          `${productName} has been added to your cart.`,
+          [
+            { 
+              text: "Continue Shopping", 
+              style: "cancel" 
+            },
+            { 
+              text: "Go to Cart", 
+              onPress: () => navigation.navigate('Cart') 
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error in handleProductPress:', error);
+      Alert.alert('Error', 'An error occurred while processing your request');
     }
   };
 

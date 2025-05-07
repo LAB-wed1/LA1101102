@@ -1,7 +1,7 @@
 // api/productAPI.js
 export const fetchProducts = async (pageNo) => {
   try {
-    const url = `https://it2.sut.ac.th/labexample/product.php?pageno=${pageNo}`;
+    const url = `http://it2.sut.ac.th/labexample/product.php?pageno=${pageNo}`;
     console.log('Fetching from URL:', url);
 
     const response = await fetch(url);
