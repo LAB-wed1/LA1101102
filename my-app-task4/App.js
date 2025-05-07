@@ -8,7 +8,7 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState([]);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -33,20 +33,21 @@ export default function App() {
     };
 
     // ดึงข้อมูลสินค้าที่เคยบันทึกไว้
-    const getSelectedProduct = async () => {
+    const getSelectedProducts = async () => {
       try {
-        const savedProduct = await AsyncStorage.getItem('selectedProduct');
-        if (savedProduct !== null) {
-          setSelectedProduct(savedProduct);
-          console.log('พบสินค้าที่บันทึกไว้:', savedProduct);
+        const savedProductsJson = await AsyncStorage.getItem('selectedProducts');
+        if (savedProductsJson !== null) {
+          const savedProducts = JSON.parse(savedProductsJson);
+          setSelectedProducts(savedProducts);
+          console.log('พบสินค้าที่บันทึกไว้:', savedProducts);
         }
       } catch (error) {
-        console.error('Error getting saved product:', error);
+        console.error('Error getting saved products:', error);
       }
     };
 
     loadProducts();
-    getSelectedProduct();
+    getSelectedProducts();
   }, []);
 
   // Filter products based on stock
@@ -57,39 +58,54 @@ export default function App() {
   // Create a function to handle product selection
   const handleProductPress = async (productName) => {
     try {
-      // บันทึกชื่อสินค้าลงใน AsyncStorage
-      await AsyncStorage.setItem('selectedProduct', productName);
-      // อัพเดต state เพื่อแสดงผลทันที
-      setSelectedProduct(productName);
-      console.log('บันทึกสินค้า:', productName);
-      
-      // แสดง Alert เพื่อแจ้งผู้ใช้
-      Alert.alert(
-        'สำเร็จ',
-        `บันทึกสินค้า "${productName}" ลงในอุปกรณ์แล้ว`,
-        [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
-      );
+      // ตรวจสอบว่าสินค้านี้ถูกเลือกไว้แล้วหรือไม่
+      if (!selectedProducts.includes(productName)) {
+        // เพิ่มสินค้าใหม่เข้าไปในอาร์เรย์ของสินค้าที่เลือก
+        const updatedSelectedProducts = [...selectedProducts, productName];
+        
+        // บันทึกอาร์เรย์ของสินค้าลงใน AsyncStorage
+        await AsyncStorage.setItem('selectedProducts', JSON.stringify(updatedSelectedProducts));
+        
+        // อัพเดต state เพื่อแสดงผลทันที
+        setSelectedProducts(updatedSelectedProducts);
+        console.log('บันทึกสินค้า:', productName);
+        console.log('รายการสินค้าที่เลือกทั้งหมด:', updatedSelectedProducts);
+        
+        // แสดง Alert เพื่อแจ้งผู้ใช้
+        Alert.alert(
+          'สำเร็จ',
+          `บันทึกสินค้า "${productName}" ลงในอุปกรณ์แล้ว`,
+          [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+        );
+      } else {
+        // แจ้งเตือนว่าสินค้านี้ถูกเลือกไว้แล้ว
+        Alert.alert(
+          'แจ้งเตือน',
+          `สินค้า "${productName}" ถูกเลือกไว้แล้ว`,
+          [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+        );
+      }
     } catch (error) {
       console.error('Error saving product to AsyncStorage:', error);
       Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกชื่อสินค้าได้');
     }
   };
 
-  // เพิ่มฟังก์ชันสำหรับลบข้อมูลสินค้าที่เลือกไว้
-  const handleClearSelectedProduct = async () => {
+  // เพิ่มฟังก์ชันสำหรับลบข้อมูลสินค้าที่เลือกไว้ทั้งหมด
+  const handleClearSelectedProducts = async () => {
     try {
-      await AsyncStorage.removeItem('selectedProduct');
-      setSelectedProduct(null);
-      console.log('ลบข้อมูลสินค้าที่เลือกไว้แล้ว');
+      await AsyncStorage.removeItem('selectedProducts');
+      setSelectedProducts([]);
+      console.log('ลบข้อมูลสินค้าที่เลือกไว้ทั้งหมดแล้ว');
       
       // แสดง Alert เพื่อแจ้งผู้ใช้
       Alert.alert(
         'สำเร็จ',
-        'ลบข้อมูลสินค้าที่เลือกไว้แล้ว',
+        'ลบข้อมูลสินค้าที่เลือกไว้ทั้งหมดแล้ว',
         [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
       );
     } catch (error) {
-      console.error('Error clearing selected product:', error);
+      console.error('Error clearing selected products:', error);
       Alert.alert('เกิดข้อผิดพลาด', 'ไม่สามารถลบข้อมูลสินค้าได้');
     }
   };
@@ -143,15 +159,22 @@ export default function App() {
 
       {/* ส่วนแสดงรายการที่ผู้ใช้เลือก */}
       <View style={styles.selectedProductSection}>
-        {selectedProduct ? (
-          <Text style={styles.selectedProductText}>สินค้าที่เลือก: {selectedProduct}</Text>
+        {selectedProducts.length > 0 ? (
+          <>
+            <Text style={styles.selectedProductText}>สินค้าที่เลือก ({selectedProducts.length}):</Text>
+            <ScrollView style={styles.selectedProductsList}>
+              {selectedProducts.map((product, index) => (
+                <Text key={index} style={styles.selectedProductItem}>• {product}</Text>
+              ))}
+            </ScrollView>
+          </>
         ) : (
           <Text style={styles.selectedProductText}>ยังไม่มีสินค้าที่เลือก</Text>
         )}
-        {selectedProduct && (
+        {selectedProducts.length > 0 && (
           <TouchableOpacity
             style={styles.clearButton}
-            onPress={handleClearSelectedProduct}
+            onPress={handleClearSelectedProducts}
           >
             <Text style={styles.clearButtonText}>CLEAR</Text>
           </TouchableOpacity>
@@ -232,6 +255,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 5,
+  },
+  selectedProductsList: {
+    maxHeight: 80,
+    width: '100%',
+    marginBottom: 5,
+  },
+  selectedProductItem: {
+    fontSize: 14,
+    color: '#333',
+    marginVertical: 2,
+    paddingHorizontal: 10,
   },
   clearButton: {
     marginTop: 10,
