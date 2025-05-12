@@ -91,21 +91,14 @@ const HomeScreen = ({ navigation }) => {
         stock: product.stock || '0'
       });
       
-      // Show a success message
-      Alert.alert(
-        "เพิ่มสินค้าลงตะกร้า",
-        `"${productName}" ถูกเพิ่มลงในตะกร้าสินค้าแล้ว${user ? '' : '\n\nหมายเหตุ: คุณยังไม่ได้เข้าสู่ระบบ สินค้าจะถูกบันทึกในตะกร้าเฉพาะอุปกรณ์นี้เท่านั้น'}`,
-        [
-          { 
-            text: "เลือกซื้อสินค้าต่อ", 
-            style: "cancel" 
-          },
-          { 
-            text: "ไปที่ตะกร้าสินค้า", 
-            onPress: () => navigation.navigate('Cart') 
-          }
-        ]
-      );
+      // Show JavaScript Alert Box
+      window.alert(`"${productName}" ถูกเพิ่มลงในตะกร้าสินค้าแล้ว${user ? '' : '\n\nหมายเหตุ: คุณยังไม่ได้เข้าสู่ระบบ สินค้าจะถูกบันทึกในตะกร้าเฉพาะอุปกรณ์นี้เท่านั้น'}`);
+      
+      // Ask if user wants to go to cart using confirm dialog
+      const goToCart = window.confirm("ต้องการไปที่ตะกร้าสินค้าหรือไม่?");
+      if (goToCart) {
+        navigation.navigate('Cart');
+      }
     }
   };
 
