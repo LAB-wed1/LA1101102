@@ -14,6 +14,7 @@ import {
 import ProductCard from '../components/ProductCard';
 import { fetchAllProducts } from '../api/productAPI';
 import { useCart } from '../context/CartContext';
+import { getCurrentUser } from '../api/firebase';
 
 const HomeScreen = ({ navigation }) => {
   const [allProducts, setAllProducts] = useState([]);
@@ -39,10 +40,17 @@ const HomeScreen = ({ navigation }) => {
       try {
         setLoading(true);
         const data = await fetchAllProducts();
-        setAllProducts(data);
+        
+        // ให้แน่ใจว่าทุกสินค้ามี id
+        const productsWithId = data.map(product => ({
+          ...product,
+          id: product.id || `product_${product.name}_${Date.now()}`
+        }));
+        
+        setAllProducts(productsWithId);
         
         // Initially display in-stock products
-        const inStockProducts = data.filter(product => parseInt(product.stock) > 0);
+        const inStockProducts = productsWithId.filter(product => parseInt(product.stock) > 0);
         setDisplayProducts(inStockProducts);
         setLoading(false);
       } catch (err) {
@@ -71,20 +79,29 @@ const HomeScreen = ({ navigation }) => {
     const product = allProducts.find(p => p.name === productName);
     
     if (product) {
+      // Check if the user is logged in
+      const user = getCurrentUser();
+      
       // Add the product to cart
-      addToCart(product);
+      addToCart({
+        id: product.id || `product_${product.name}_${Date.now()}`,
+        name: product.name,
+        price: parseFloat(product.price) || 0, 
+        pic: product.pic || 'https://via.placeholder.com/150',
+        stock: product.stock || '0'
+      });
       
       // Show a success message
       Alert.alert(
-        "Added to Cart",
-        `${productName} has been added to your cart.`,
+        "เพิ่มสินค้าลงตะกร้า",
+        `"${productName}" ถูกเพิ่มลงในตะกร้าสินค้าแล้ว${user ? '' : '\n\nหมายเหตุ: คุณยังไม่ได้เข้าสู่ระบบ สินค้าจะถูกบันทึกในตะกร้าเฉพาะอุปกรณ์นี้เท่านั้น'}`,
         [
           { 
-            text: "Continue Shopping", 
+            text: "เลือกซื้อสินค้าต่อ", 
             style: "cancel" 
           },
           { 
-            text: "Go to Cart", 
+            text: "ไปที่ตะกร้าสินค้า", 
             onPress: () => navigation.navigate('Cart') 
           }
         ]
@@ -105,6 +122,15 @@ const HomeScreen = ({ navigation }) => {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  // ตรวจสอบว่ามีสินค้าหรือไม่
+  if (!allProducts || allProducts.length === 0) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>ไม่พบข้อมูลสินค้า</Text>
       </View>
     );
   }

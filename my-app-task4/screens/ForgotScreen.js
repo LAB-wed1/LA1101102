@@ -1,48 +1,95 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { resetPassword } from '../api/firebase';
 
 const ForgotScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleResetPassword = () => {
-    // In a real app, this would connect to a backend service
-    Alert.alert(
-      "Password Reset",
-      "If an account exists with this email, a password reset link will be sent.",
-      [{ text: "OK", onPress: () => navigation.navigate('Login') }]
-    );
+  const handleResetPassword = async () => {
+    if (!email) {
+      Alert.alert('กรุณากรอกอีเมล', 'โปรดกรอกอีเมลที่คุณใช้ในการลงทะเบียน');
+      return;
+    }
+
+    // ตรวจสอบรูปแบบอีเมล
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('อีเมลไม่ถูกต้อง', 'โปรดตรวจสอบรูปแบบอีเมลของคุณและลองอีกครั้ง');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log("กำลังส่งอีเมลรีเซ็ตรหัสผ่านไปที่:", email);
+      const { success, error } = await resetPassword(email);
+      
+      if (error) {
+        console.error("เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน:", error);
+        Alert.alert(
+          'ไม่สามารถรีเซ็ตรหัสผ่านได้', 
+          error,
+          [{ text: "ตกลง" }]
+        );
+        setLoading(false);
+        return;
+      }
+      
+      if (success) {
+        console.log("ส่งอีเมลรีเซ็ตรหัสผ่านสำเร็จ");
+        Alert.alert(
+          "ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว",
+          "เราได้ส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว โปรดตรวจสอบกล่องจดหมายของคุณและทำตามคำแนะนำ",
+          [{ text: "ตกลง", onPress: () => navigation.navigate('Login') }]
+        );
+      }
+    } catch (error) {
+      console.error("ข้อผิดพลาดที่ไม่ได้จัดการ:", error);
+      Alert.alert(
+        'เกิดข้อผิดพลาด', 
+        `ไม่สามารถส่งอีเมลรีเซ็ตรหัสผ่านได้ โปรดลองอีกครั้งในภายหลัง\n\nรายละเอียดข้อผิดพลาด: ${error.message || 'ไม่ทราบสาเหตุ'}`
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Forgot Password</Text>
+      <Text style={styles.title}>ลืมรหัสผ่าน</Text>
       
       <Text style={styles.description}>
-        Enter your email address and we'll send you a link to reset your password.
+        กรอกอีเมลที่คุณใช้ในการลงทะเบียน เราจะส่งลิงก์สำหรับรีเซ็ตรหัสผ่านไปให้คุณ
       </Text>
       
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>อีเมล</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your email"
+          placeholder="กรอกอีเมลของคุณ"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
+          autoComplete="email"
         />
       </View>
       
       <TouchableOpacity
         style={styles.button}
         onPress={handleResetPassword}
+        disabled={loading}
       >
-        <Text style={styles.buttonText}>Reset Password</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>รีเซ็ตรหัสผ่าน</Text>
+        )}
       </TouchableOpacity>
       
       <View style={styles.linkContainer}>
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.link}>Back to Login</Text>
+          <Text style={styles.link}>กลับไปยังหน้าเข้าสู่ระบบ</Text>
         </TouchableOpacity>
       </View>
     </View>

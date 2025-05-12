@@ -1,13 +1,48 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { loginUser } from '../api/firebase';
+import { useAuth } from '../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleLogin = async () => {
+    setErrorMessage('');
+    
+    if (!email || !password) {
+      setErrorMessage('กรุณากรอกอีเมลและรหัสผ่าน');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { user, error } = await loginUser(email, password);
+      
+      if (error) {
+        setErrorMessage(error);
+        return;
+      }
+      
+      // No need to navigate manually - the app navigator will handle this
+    } catch (error) {
+      setErrorMessage(error.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองอีกครั้ง');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
+      
+      {errorMessage ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : null}
       
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Email</Text>
@@ -15,7 +50,10 @@ const LoginScreen = ({ navigation }) => {
           style={styles.input}
           placeholder="Enter your email"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            setErrorMessage('');
+          }}
           keyboardType="email-address"
           autoCapitalize="none"
         />
@@ -27,16 +65,24 @@ const LoginScreen = ({ navigation }) => {
           style={styles.input}
           placeholder="Enter your password"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            setErrorMessage('');
+          }}
           secureTextEntry
         />
       </View>
       
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('Main')}
+        onPress={handleLogin}
+        disabled={loading}
       >
-        <Text style={styles.buttonText}>Login</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Login</Text>
+        )}
       </TouchableOpacity>
       
       <View style={styles.linkContainer}>
@@ -98,6 +144,19 @@ const styles = StyleSheet.create({
     color: '#007BFF',
     fontSize: 16,
     marginVertical: 5,
+  },
+  errorContainer: {
+    backgroundColor: '#FFE8E8',
+    borderWidth: 1,
+    borderColor: '#FF0000',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 15,
+  },
+  errorText: {
+    color: '#FF0000',
+    textAlign: 'center',
+    fontSize: 14,
   },
 });
 

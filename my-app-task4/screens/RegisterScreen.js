@@ -1,11 +1,71 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { registerUser, auth, updateProfile } from '../api/firebase';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    // Validation
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log("Attempting to register user with email:", email);
+      const { user, error } = await registerUser(email, password);
+      
+      if (error) {
+        console.error("Registration error from Firebase:", error);
+        Alert.alert('Registration Error', error);
+        setLoading(false);
+        return;
+      }
+      
+      if (user) {
+        console.log("User registered successfully:", user.uid);
+        // ข้ามการอัปเดตโปรไฟล์ชั่วคราวเพื่อหลีกเลี่ยงปัญหา Jimp
+        // await updateProfile(auth.currentUser, {
+        //   displayName: name
+        // });
+        
+        // บันทึกข้อมูลชื่อไว้ที่อื่นหรือทำในภายหลัง
+        
+        Alert.alert(
+          'Registration Successful',
+          'Your account has been created successfully.',
+          [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        );
+      }
+    } catch (error) {
+      console.error("Unhandled registration error:", error);
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+      
+      Alert.alert(
+        'Registration Error', 
+        `${error.message || 'Registration failed. Please try again.'}\n\nError code: ${error.code || 'unknown'}`
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -57,9 +117,14 @@ const RegisterScreen = ({ navigation }) => {
       
       <TouchableOpacity
         style={styles.button}
-        onPress={() => navigation.navigate('Login')}
+        onPress={handleRegister}
+        disabled={loading}
       >
-        <Text style={styles.buttonText}>Register</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Register</Text>
+        )}
       </TouchableOpacity>
       
       <View style={styles.linkContainer}>

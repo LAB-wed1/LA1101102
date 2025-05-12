@@ -1,36 +1,55 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { logoutUser } from '../api/firebase';
+import { useAuth } from '../context/AuthContext';
+import { Ionicons } from '@expo/vector-icons';
 
 const ProfileScreen = ({ navigation }) => {
-  // Sample user data - in a real app, this would come from a user context or store
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    profileImage: 'https://via.placeholder.com/150',
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
     address: '123 Main St, City, Country',
     phone: '+1 234 567 890',
-  };
-  
-  const [imageError, setImageError] = useState(false);
+  });
 
-  const handleLogout = () => {
-    // In a real app, this would clear auth tokens
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
+  // Load user data from Firebase
+  useEffect(() => {
+    if (user) {
+      setUserData({
+        ...userData,
+        name: user.displayName || 'User',
+        email: user.email || '',
+      });
+    }
+  }, [user]);
+
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      const { success, error } = await logoutUser();
+      
+      if (error) {
+        Alert.alert('Logout Error', error);
+      }
+      
+      // No need to navigate manually - AuthContext will handle this
+    } catch (error) {
+      Alert.alert('Logout Error', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.profileHeader}>
-        <Image
-          source={{ uri: user.profileImage }}
-          style={styles.profileImage}
-          onError={() => setImageError(true)}
-        />
-        <Text style={styles.userName}>{user.name}</Text>
-        <Text style={styles.userEmail}>{user.email}</Text>
+        <View style={styles.profileImageContainer}>
+          <Ionicons name="person-circle" size={100} color="#007BFF" />
+        </View>
+        <Text style={styles.userName}>{userData.name}</Text>
+        <Text style={styles.userEmail}>{userData.email}</Text>
       </View>
 
       <View style={styles.section}>
@@ -38,12 +57,12 @@ const ProfileScreen = ({ navigation }) => {
         
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Address</Text>
-          <Text style={styles.infoValue}>{user.address}</Text>
+          <Text style={styles.infoValue}>{userData.address}</Text>
         </View>
         
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Phone</Text>
-          <Text style={styles.infoValue}>{user.phone}</Text>
+          <Text style={styles.infoValue}>{userData.phone}</Text>
         </View>
       </View>
 
@@ -70,8 +89,13 @@ const ProfileScreen = ({ navigation }) => {
       <TouchableOpacity 
         style={styles.logoutButton}
         onPress={handleLogout}
+        disabled={loading}
       >
-        <Text style={styles.logoutButtonText}>Logout</Text>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
@@ -89,11 +113,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  profileImage: {
+  profileImageContainer: {
     width: 100,
     height: 100,
     borderRadius: 50,
     marginBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userName: {
     fontSize: 22,
