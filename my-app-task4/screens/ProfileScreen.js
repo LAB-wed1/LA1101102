@@ -1,29 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
 import { logoutUser } from '../api/firebase';
 import { useAuth } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState({
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [profileData, setProfileData] = useState({
     name: '',
     email: '',
     address: '123 Main St, City, Country',
     phone: '+1 234 567 890',
+    profilePicture: null,
   });
 
-  // Load user data from Firebase
+  // Load user data and profile picture
   useEffect(() => {
     if (user) {
-      setUserData({
-        ...userData,
+      setProfileData({
+        ...profileData,
         name: user.displayName || 'User',
         email: user.email || '',
       });
+      
+      // Load profile picture from AsyncStorage
+      loadProfilePicture();
     }
   }, [user]);
+
+  const loadProfilePicture = async () => {
+    try {
+      if (user) {
+        const savedImageUri = await AsyncStorage.getItem(`@profile_picture_${user.uid}`);
+        if (savedImageUri) {
+          setProfileData(prev => ({
+            ...prev,
+            profilePicture: savedImageUri
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading profile picture:', error);
+    }
+  };
 
   const handleLogout = async () => {
     setLoading(true);
@@ -42,14 +65,77 @@ const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      // Request permission
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Alert.alert('Permission Required', 'You need to allow access to your photos to change profile picture');
+        return;
+      }
+      
+      // Launch image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      
+      if (result.canceled) {
+        return;
+      }
+      
+      // Set loading state
+      setUploadingImage(true);
+      
+      const imageUri = result.assets[0].uri;
+      
+      // Save image URI to AsyncStorage
+      if (user) {
+        await AsyncStorage.setItem(`@profile_picture_${user.uid}`, imageUri);
+      }
+      
+      // Update local state
+      setProfileData({
+        ...profileData,
+        profilePicture: imageUri
+      });
+      
+      Alert.alert('Success', 'Profile picture updated successfully');
+      setUploadingImage(false);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update profile picture');
+      console.error(error);
+      setUploadingImage(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.profileHeader}>
-        <View style={styles.profileImageContainer}>
-          <Ionicons name="person-circle" size={100} color="#007BFF" />
-        </View>
-        <Text style={styles.userName}>{userData.name}</Text>
-        <Text style={styles.userEmail}>{userData.email}</Text>
+        <TouchableOpacity 
+          style={styles.profileImageContainer}
+          onPress={pickImage}
+          disabled={uploadingImage}
+        >
+          {uploadingImage ? (
+            <ActivityIndicator size="large" color="#007BFF" />
+          ) : profileData.profilePicture ? (
+            <Image 
+              source={{ uri: profileData.profilePicture }} 
+              style={styles.profileImage} 
+            />
+          ) : (
+            <Ionicons name="person-circle" size={100} color="#007BFF" />
+          )}
+          <View style={styles.editIconContainer}>
+            <Ionicons name="camera" size={20} color="#fff" />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.userName}>{profileData.name}</Text>
+        <Text style={styles.userEmail}>{profileData.email}</Text>
       </View>
 
       <View style={styles.section}>
@@ -57,12 +143,12 @@ const ProfileScreen = ({ navigation }) => {
         
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Address</Text>
-          <Text style={styles.infoValue}>{userData.address}</Text>
+          <Text style={styles.infoValue}>{profileData.address}</Text>
         </View>
         
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Phone</Text>
-          <Text style={styles.infoValue}>{userData.phone}</Text>
+          <Text style={styles.infoValue}>{profileData.phone}</Text>
         </View>
       </View>
 
@@ -118,6 +204,25 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     marginBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 50,
+  },
+  editIconContainer: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#007BFF',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },

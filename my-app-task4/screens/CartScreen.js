@@ -124,10 +124,11 @@ const CartScreen = ({ navigation }) => {
       await loadCartFromFirebase();
       
       if (result) {
-        console.log('ลบสินค้าสำเร็จ');
+        console.log('ลบสินค้าสำเร็จ - สินค้าถูกลบออกจาก Firestore แล้ว!');
+        console.log('คุณสามารถตรวจสอบได้ที่ Firebase Console -> Firestore Database -> collection "cart"');
         Alert.alert(
           "ลบสินค้าสำเร็จ",
-          `ลบ "${item.name || 'รายการสินค้า'}" ออกจากตะกร้าสินค้าแล้ว`,
+          `ลบ "${item.name || 'รายการสินค้า'}" ออกจากตะกร้าสินค้าแล้ว\n\nสินค้าถูกลบออกจาก Firestore Database แล้ว`,
           [{ 
             text: "ตกลง",
             onPress: () => {
