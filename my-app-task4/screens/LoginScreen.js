@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { loginUser } from '../api/firebase';
 import { useAuth } from '../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
@@ -8,6 +7,7 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     setErrorMessage('');
@@ -19,13 +19,11 @@ const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const { user, error } = await loginUser(email, password);
+      const result = await login(email, password);
       
-      if (error) {
-        setErrorMessage(error);
-        return;
+      if (result && result.error) {
+        setErrorMessage(result.error);
       }
-      
       // No need to navigate manually - the app navigator will handle this
     } catch (error) {
       setErrorMessage(error.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองอีกครั้ง');
@@ -36,7 +34,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Text style={styles.title}>เข้าสู่ระบบ</Text>
       
       {errorMessage ? (
         <View style={styles.errorContainer}>
@@ -45,10 +43,10 @@ const LoginScreen = ({ navigation }) => {
       ) : null}
       
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>อีเมล</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your email"
+          placeholder="กรอกอีเมลของคุณ"
           value={email}
           onChangeText={(text) => {
             setEmail(text);
@@ -60,10 +58,10 @@ const LoginScreen = ({ navigation }) => {
       </View>
       
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.label}>รหัสผ่าน</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter your password"
+          placeholder="กรอกรหัสผ่านของคุณ"
           value={password}
           onChangeText={(text) => {
             setPassword(text);
@@ -81,17 +79,17 @@ const LoginScreen = ({ navigation }) => {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Login</Text>
+          <Text style={styles.buttonText}>เข้าสู่ระบบ</Text>
         )}
       </TouchableOpacity>
       
       <View style={styles.linkContainer}>
         <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.link}>Don't have an account? Register</Text>
+          <Text style={styles.link}>ยังไม่มีบัญชี? สมัครสมาชิก</Text>
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => navigation.navigate('Forgot')}>
-          <Text style={styles.link}>Forgot Password?</Text>
+          <Text style={styles.link}>ลืมรหัสผ่าน?</Text>
         </TouchableOpacity>
       </View>
     </View>

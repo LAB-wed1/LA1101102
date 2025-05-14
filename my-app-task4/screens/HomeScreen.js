@@ -14,6 +14,7 @@ import {
 import ProductCard from '../components/ProductCard';
 import { fetchAllProducts } from '../api/productAPI';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { getCurrentUser } from '../api/firebase';
 
 const HomeScreen = ({ navigation }) => {
@@ -24,6 +25,7 @@ const HomeScreen = ({ navigation }) => {
   const [error, setError] = useState(null);
   const windowWidth = useWindowDimensions().width;
   const { addToCart } = useCart();
+  const { user, isAuthenticated } = useAuth();
 
   // Calculate number of columns based on screen width
   const getNumColumns = () => {
@@ -35,10 +37,19 @@ const HomeScreen = ({ navigation }) => {
 
   const numColumns = getNumColumns();
 
+  // ตรวจสอบการเข้าสู่ระบบ
+  useEffect(() => {
+    if (!isAuthenticated) {
+      // ถ้าไม่ได้เข้าสู่ระบบ ให้กลับไปหน้า Login
+      navigation.replace('Auth');
+    }
+  }, [isAuthenticated, navigation]);
+
   useEffect(() => {
     const loadProducts = async () => {
       try {
         setLoading(true);
+        // ดึงข้อมูลสินค้าจาก Firebase
         const data = await fetchAllProducts();
         
         // ให้แน่ใจว่าทุกสินค้ามี id
@@ -60,8 +71,11 @@ const HomeScreen = ({ navigation }) => {
       }
     };
 
-    loadProducts();
-  }, []);
+    // ดึงข้อมูลสินค้าเมื่อเข้าสู่ระบบแล้วเท่านั้น
+    if (isAuthenticated) {
+      loadProducts();
+    }
+  }, [isAuthenticated]);
 
   const showAllProducts = () => {
     setDisplayProducts(allProducts);
@@ -79,9 +93,6 @@ const HomeScreen = ({ navigation }) => {
     const product = allProducts.find(p => p.name === productName);
     
     if (product) {
-      // Check if the user is logged in
-      const user = getCurrentUser();
-      
       // Add the product to cart
       addToCart({
         id: product.id || `product_${product.name}_${Date.now()}`,
@@ -91,22 +102,39 @@ const HomeScreen = ({ navigation }) => {
         stock: product.stock || '0'
       });
       
-      // Show JavaScript Alert Box
-      window.alert(`"${productName}" ถูกเพิ่มลงในตะกร้าสินค้าแล้ว${user ? '' : '\n\nหมายเหตุ: คุณยังไม่ได้เข้าสู่ระบบ สินค้าจะถูกบันทึกในตะกร้าเฉพาะอุปกรณ์นี้เท่านั้น'}`);
-      
-      // Ask if user wants to go to cart using confirm dialog
-      const goToCart = window.confirm("ต้องการไปที่ตะกร้าสินค้าหรือไม่?");
-      if (goToCart) {
-        navigation.navigate('Cart');
-      }
+      // Show Alert
+      Alert.alert(
+        "เพิ่มสินค้าสำเร็จ",
+        `"${productName}" ถูกเพิ่มลงในตะกร้าสินค้าแล้ว`,
+        [
+          {
+            text: "ดูตะกร้าสินค้า",
+            onPress: () => navigation.navigate('Cart')
+          },
+          {
+            text: "ซื้อสินค้าต่อ",
+            style: "cancel"
+          }
+        ]
+      );
     }
   };
+
+  // ถ้าไม่ได้เข้าสู่ระบบ ไม่ต้องแสดงอะไร (จะถูกเปลี่ยนเส้นทางไปหน้า Login)
+  if (!isAuthenticated) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#007BFF" />
+        <Text style={styles.loadingText}>กรุณารอสักครู่...</Text>
+      </View>
+    );
+  }
 
   if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#007BFF" />
-        <Text style={styles.loadingText}>Loading products...</Text>
+        <Text style={styles.loadingText}>กำลังโหลดสินค้า...</Text>
       </View>
     );
   }
@@ -144,7 +172,8 @@ const HomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Text style={styles.headerText}>Featured Products</Text>
+        <Text style={styles.headerText}>สินค้าแนะนำ</Text>
+        <Text style={styles.welcomeText}>ยินดีต้อนรับคุณ {user?.email || 'ผู้ใช้'}</Text>
         
         <View style={styles.filterTabContainer}>
           <TouchableOpacity 
@@ -157,7 +186,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={[
               styles.filterTabText, 
               !showInStock ? styles.activeTabText : styles.inactiveTabText
-            ]}>ALL</Text>
+            ]}>สินค้าทั้งหมด</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -170,7 +199,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={[
               styles.filterTabText, 
               showInStock ? styles.activeTabText : styles.inactiveTabText
-            ]}>IN STOCK</Text>
+            ]}>มีสินค้าในสต็อก</Text>
           </TouchableOpacity>
         </View>
         
@@ -187,7 +216,7 @@ const HomeScreen = ({ navigation }) => {
           />
         ) : (
           <View style={styles.centered}>
-            <Text style={styles.noProductsText}>No products available.</Text>
+            <Text style={styles.noProductsText}>ไม่มีสินค้าที่ตรงตามเงื่อนไข</Text>
           </View>
         )}
       </View>
@@ -208,8 +237,13 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 8,
     color: '#333',
+  },
+  welcomeText: {
+    fontSize: 16,
+    marginBottom: 16,
+    color: '#666',
   },
   filterTabContainer: {
     flexDirection: 'row',
@@ -265,7 +299,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
-  },
+  }
 });
 
 export default HomeScreen;

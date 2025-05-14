@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
 // Import screens
@@ -22,6 +22,17 @@ const AuthStack = createNativeStackNavigator();
 
 // Tab Navigator Component
 const MainTabNavigator = () => {
+  const { isAuthenticated } = useAuth();
+
+  // ตรวจสอบการเข้าสู่ระบบ
+  if (!isAuthenticated) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>กรุณาเข้าสู่ระบบ</Text>
+      </View>
+    );
+  }
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -43,9 +54,21 @@ const MainTabNavigator = () => {
         headerShown: true,
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Cart" component={CartScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen} 
+        options={{ title: 'หน้าหลัก' }}
+      />
+      <Tab.Screen 
+        name="Cart" 
+        component={CartScreen} 
+        options={{ title: 'ตะกร้าสินค้า' }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen} 
+        options={{ title: 'โปรไฟล์' }}
+      />
     </Tab.Navigator>
   );
 };

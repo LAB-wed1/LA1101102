@@ -3,10 +3,11 @@ import {
   getCollection, 
   addDocument, 
   updateDocument, 
-  getDocument 
+  getDocument,
+  setDocument
 } from './firebase';
 
-// ฟังก์ชันดึงข้อมูลสินค้าจาก API ภายนอก
+// ฟังก์ชันดึงข้อมูลสินค้าจาก API ภายนอก (ไม่ใช้แล้ว แต่เก็บไว้เป็นประวัติ)
 export const fetchProducts = async (pageNo) => {
   try {
     const url = `http://it2.sut.ac.th/labexample/product.php?pageno=${pageNo}`;
@@ -32,10 +33,10 @@ export const fetchProducts = async (pageNo) => {
   }
 };
 
-// ฟังก์ชันดึงข้อมูลสินค้าทั้งหมดจาก API ภายนอก
+// ฟังก์ชันดึงข้อมูลสินค้าทั้งหมดจาก Firebase
 export const fetchAllProducts = async () => {
   try {
-    // ก่อนอื่นพยายามดึงข้อมูลจาก Firebase
+    // ดึงข้อมูลจาก Firebase
     const firebaseProducts = await getProductsFromFirebase();
     
     // ถ้ามีข้อมูลใน Firebase แล้ว ให้คืนค่าจาก Firebase
@@ -44,44 +45,77 @@ export const fetchAllProducts = async () => {
       return firebaseProducts;
     }
     
-    // ถ้าไม่มีข้อมูลใน Firebase ให้ดึงจาก API ภายนอก
-    let allProducts = [];
-    let currentPage = 1;
-    let hasMorePages = true;
+    // ถ้าไม่มีข้อมูลใน Firebase ให้เริ่มต้นด้วยข้อมูลตัวอย่าง
+    console.log('No products in Firebase, initializing with sample data');
+    await initializeProductsInFirebase();
     
-    // Loop until we don't get any more products or reach a reasonable limit
-    while (hasMorePages && currentPage <= 10) { // Setting a max of 10 pages for safety
-      const pageProducts = await fetchProducts(currentPage);
-      
-      // If we get no products or empty array, stop fetching
-      if (!pageProducts || pageProducts.length === 0) {
-        hasMorePages = false;
-      } else {
-        // เพิ่ม ID ให้สินค้าแต่ละชิ้น
-        const productsWithId = pageProducts.map(product => ({
-          ...product,
-          id: `product_${product.name}_${Date.now()}`
-        }));
-        
-        allProducts = [...allProducts, ...productsWithId];
-        console.log(`Page ${currentPage} products: ${pageProducts.length}`);
-        currentPage++;
-      }
-    }
-
-    console.log('Total products loaded:', allProducts.length);
-    const inStockProducts = allProducts.filter(item => parseInt(item.stock) > 0);
-    console.log('Products in stock:', inStockProducts.length);
-    
-    // บันทึกข้อมูลสินค้าลง Firebase สำหรับใช้ในครั้งต่อไป
-    if (allProducts.length > 0) {
-      saveProductsToFirebase(allProducts);
-    }
-    
-    return allProducts;
+    // ดึงข้อมูลอีกครั้งหลังจากเริ่มต้น
+    const initializedProducts = await getProductsFromFirebase();
+    return initializedProducts;
   } catch (error) {
     console.error('Error fetching all products:', error);
     return [];
+  }
+};
+
+// ฟังก์ชันเริ่มต้นข้อมูลสินค้าใน Firebase ด้วยข้อมูลตัวอย่าง
+export const initializeProductsInFirebase = async () => {
+  try {
+    const sampleProducts = [
+      {
+        "id": "1",
+        "name": "Pantene แพนทีน มิราเคิล คริสตัล สมูท แชมพู+ครีมนวดผม 500 มล.",
+        "price": "599",
+        "stock": "2",
+        "cate": "ผลิตภัณฑ์ดูแลผม",
+        "pic": "http://it2.sut.ac.th/labexample/pics/pantene.jpg"
+      },
+      {
+        "id": "2",
+        "name": "ลอรีอัล ปารีส เอลแซฟ เอ็กซ์ตรอว์ดินารี่ ออยล์ 100 มล. (Extraordinary, บำรุงผม, น้ำมันใส่ผม, เซรั่มบำ",
+        "price": "259",
+        "stock": "0",
+        "cate": "ผลิตภัณฑ์ดูแลผม",
+        "pic": "http://it2.sut.ac.th/labexample/pics/elseve.jpg"
+      },
+      {
+        "id": "3",
+        "name": "Microsoft Surface Pro 7 Laptop with Type Cover",
+        "price": "38900",
+        "stock": "5",
+        "cate": "Computer",
+        "pic": "http://it2.sut.ac.th/labexample/pics/surface.jpg"
+      },
+      {
+        "id": "4",
+        "name": "Desktop PC DELL Optiplex 3080SFF-SNS38SF001",
+        "price": "14400",
+        "stock": "3",
+        "cate": "Computer",
+        "pic": "http://it2.sut.ac.th/labexample/pics/dell.jpg"
+      },
+      {
+        "id": "5",
+        "name": "ซัมซุง ตู้เย็น 2 ประตู รุ่น RT20HAR1DSA/ST ขนาด 7.4 คิว",
+        "price": "6990",
+        "stock": "10",
+        "cate": "เครื่องใช้ไฟฟ้า",
+        "pic": "http://it2.sut.ac.th/labexample/pics/fridge.jpg"
+      }
+    ];
+    
+    console.log(`Initializing Firebase with ${sampleProducts.length} sample products...`);
+    
+    // บันทึกข้อมูลสินค้าลง Firebase โดยใช้ ID ที่กำหนดไว้
+    for (const product of sampleProducts) {
+      await setDocument('products1', product.id, product);
+    }
+    
+    console.log('Sample products saved to Firebase successfully');
+    return true;
+  } catch (error) {
+    console.error('Error initializing products in Firebase:', error);
+    return false;
   }
 };
 
@@ -98,7 +132,9 @@ export const saveProductsToFirebase = async (products) => {
     
     // บันทึกข้อมูลสินค้าลง Firebase
     for (const product of products) {
-      await addDocument('products', product);
+      // ใช้ ID ที่มีอยู่หรือสร้างใหม่ถ้าไม่มี
+      const productId = product.id || `product_${Date.now()}`;
+      await setDocument('products1', productId, product);
     }
     
     console.log('Products saved to Firebase successfully');
@@ -112,8 +148,22 @@ export const saveProductsToFirebase = async (products) => {
 // ฟังก์ชันดึงข้อมูลสินค้าจาก Firebase
 export const getProductsFromFirebase = async () => {
   try {
-    const products = await getCollection('products');
-    return products;
+    const response = await getCollection('products1');
+    
+    // ตรวจสอบว่ามี error หรือไม่
+    if (response.error) {
+      console.error('Error getting products from Firebase:', response.error);
+      return [];
+    }
+    
+    // ตรวจสอบว่ามีข้อมูลหรือไม่
+    if (!response.data) {
+      console.log('No products data returned from Firebase');
+      return [];
+    }
+    
+    console.log('Products retrieved from Firebase:', response.data.length);
+    return response.data;
   } catch (error) {
     console.error('Error getting products from Firebase:', error);
     return [];
@@ -123,7 +173,7 @@ export const getProductsFromFirebase = async () => {
 // ฟังก์ชันค้นหาสินค้าตาม ID
 export const getProductById = async (productId) => {
   try {
-    const product = await getDocument('products', productId);
+    const product = await getDocument('products1', productId);
     return product;
   } catch (error) {
     console.error(`Error getting product with ID ${productId}:`, error);
@@ -134,7 +184,7 @@ export const getProductById = async (productId) => {
 // ฟังก์ชันอัปเดตข้อมูลสินค้า
 export const updateProduct = async (productId, productData) => {
   try {
-    await updateDocument('products', productId, productData);
+    await updateDocument('products1', productId, productData);
     return true;
   } catch (error) {
     console.error(`Error updating product with ID ${productId}:`, error);
